@@ -157,7 +157,7 @@ public class PMPDB {
             if(size>max)
                 max=size;
         }
-        
+
         StringBuilder s = new StringBuilder();
         
         // column names
@@ -171,11 +171,9 @@ public class PMPDB {
         for(int i=0; i<max ; i++){
             for (String key:data.keySet()){
                 
-                // for column that have less elements that the max, fill the end with %empty%
+                // for column that have less elements that the max, leave the trailing cells empty
                 if(data.get(key).size()>i){
                     s.append(data.get(key).get(i));
-                }else{
-                    s.append("%empty%");
                 }
                 s.append(";");
             }
@@ -193,7 +191,7 @@ public class PMPDB {
     	options.addOption("h","help", false, "prints the help content");
     	options.addOption(OptionBuilder.withArgName("srcFolder").hasArg().withDescription("Picasa DB folder. Default is " + EnvironmentVariables.DEFAULT_PICASA_DB_PATH).create(PARAM_PICASA_DB_FOLDER));
     	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
-    	
+
     	CommandLineParser parser = new GnuParser();
     	String folder=null;
         File output = null;
