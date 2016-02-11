@@ -142,13 +142,13 @@ public class PMPDB {
         return l;
     }
 	
-	public void writeCSVs(String output) throws Exception{
+	public void writeCSVs(File output) throws Exception{
 		writeCSV("catdata", catdata, output);
 		writeCSV("imagedata", imagedata, output);
 		writeCSV("albumdata", albumdata, output);
 	}
 	
-    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, String output) throws Exception{
+    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output) throws Exception{
     	// not all files have the same number of elements, get the maximum size for a table
         int max = 0;
         for (String key:data.keySet()){
@@ -181,7 +181,7 @@ public class PMPDB {
             }
             s.append("\n");
         }
-    FileWriter fw = new FileWriter(output+table+".csv");
+        FileWriter fw = new FileWriter(new File(output, table+".csv"));
         BufferedWriter bw = new BufferedWriter(fw);
         bw.write(s.toString());
         bw.close();
@@ -196,24 +196,22 @@ public class PMPDB {
     	
     	CommandLineParser parser = new GnuParser();
     	String folder=null;
-    	String output=null;
+        File output = null;
         try {
             // parse the command line arguments
             CommandLine line = parser.parse( options, args );
+
             if(line.hasOption("h")){
             	showHelp(options);
                 System.exit(1);
             }
-            
+
             folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
 
             if(line.hasOption(PARAM_OUTPUT_FOLDER)){
-            	output = EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER));
-                if(!output.endsWith(File.separator)){
-                	output += File.separator;
-                }
-            	if(! new File(output).exists()){
-            		throw new Exception("output folder does not exist:"+output);
+                output = new File(EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER)));
+                if (!output.mkdirs() && !output.isDirectory()) {
+                    throw new Exception("could not create output folder: " + output);
             	}
             }
         }
