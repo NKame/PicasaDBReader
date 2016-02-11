@@ -8,6 +8,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -16,6 +17,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 
 public class PMPDB {
@@ -34,6 +37,8 @@ public class PMPDB {
 	HashMap<String, ArrayList<String>> imagedata;
 	String folder;
 	Indexes indexes;
+
+    private static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.withDelimiter(';');
 	
 	public PMPDB(String folder) {
 		this.folder = folder;
@@ -151,38 +156,33 @@ public class PMPDB {
     private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output) throws Exception{
     	// not all files have the same number of elements, get the maximum size for a table
         int max = 0;
-        for (String key:data.keySet()){
+
+        List<String> keys = new ArrayList<String>(data.keySet());
+
+        for (String key: keys){
             int size = data.get(key).size();
             //System.out.println(key+":"+size);
             if(size>max)
                 max=size;
         }
 
-        StringBuilder s = new StringBuilder();
-        
-        // column names
-        for (String key:data.keySet()){
-                s.append(key);
-                s.append(";");
-            }
-        s.append("\n");
-        
-        
-        for(int i=0; i<max ; i++){
-            for (String key:data.keySet()){
-                
-                // for column that have less elements that the max, leave the trailing cells empty
-                if(data.get(key).size()>i){
-                    s.append(data.get(key).get(i));
-                }
-                s.append(";");
-            }
-            s.append("\n");
-        }
         FileWriter fw = new FileWriter(new File(output, table+".csv"));
         BufferedWriter bw = new BufferedWriter(fw);
-        bw.write(s.toString());
-        bw.close();
+        CSVPrinter csv = new CSVPrinter(bw, CSV_FORMAT);
+
+        // column names
+        csv.printRecord(keys);
+
+        for(int i=0; i<max ; i++){
+            for (String key: keys){
+                // for column that have less elements that the max, leave the trailing cells empty
+                if(data.get(key).size()>i){
+                    csv.print(data.get(key).get(i));
+                }
+            }
+            csv.println();
+        }
+        csv.close();
     }
 	
 	@SuppressWarnings("static-access")
