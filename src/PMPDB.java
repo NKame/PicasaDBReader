@@ -10,22 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
 
 public class PMPDB {
-	private static final String PARAM_OUTPUT_FOLDER = "output";
-
-	private static final String PARAM_PICASA_DB_FOLDER = "folder";
-
 	private static final String APPTITLE = "PMPDB";
 
 	private static final String HELP = "read all the PMP files containing the Picasa Database and the file " +
@@ -187,47 +176,11 @@ public class PMPDB {
 	
 	@SuppressWarnings("static-access")
 	public static void main(String[] args) throws Exception {
-		Options options = new Options();
-    	options.addOption("h","help", false, "prints the help content");
-    	options.addOption(OptionBuilder.withArgName("srcFolder").hasArg().withDescription("Picasa DB folder. Default is " + EnvironmentVariables.DEFAULT_PICASA_DB_PATH).create(PARAM_PICASA_DB_FOLDER));
-    	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
+        EnvironmentVariables.StandardArguments a = EnvironmentVariables.parseCommandLine(APPTITLE, HELP, args);
 
-    	CommandLineParser parser = new GnuParser();
-    	File folder = null;
-        File output = null;
-        try {
-            // parse the command line arguments
-            CommandLine line = parser.parse( options, args );
-
-            if(line.hasOption("h")){
-            	showHelp(options);
-                System.exit(1);
-            }
-
-            folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
-
-            output = new File(EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER)));
-            if (!output.mkdirs() && !output.isDirectory()) {
-                throw new Exception("could not create output folder: " + output);
-            }
-        }
-        catch( ParseException exp ) {
-            // oops, something went wrong
-        	
-            System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
-            showHelp(options);
-            System.exit(1);
-        }
-        
-        PMPDB db = new PMPDB(folder);
+        PMPDB db = new PMPDB(a.folder);
         db.populate();
-        db.writeCSVs(output);
+        db.writeCSVs(a.output);
 	}
 
-	private static void showHelp(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(APPTITLE, 
-				HELP, 
-				options, "\n", true);
-	}
 }

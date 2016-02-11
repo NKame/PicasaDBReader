@@ -6,19 +6,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 
 
 public class PicasaFaces {
-	private static final String PARAM_OUTPUT_FOLDER = "output";
-	private static final String PARAM_PICASA_DB_FOLDER = "folder";
+
+	public static final String HELP = "PicasaFaces will extract the face information from the Picasa Database and save it in a csv file. " +
+			"If the command line contains the argument '-convert' followed by the path to convert, " +
+			"then imagemagick will create all the face thumbshots (in the output folder with a folder for each person). " +
+			"A string replacement of the image paths can be done if the pictures location is different from the database.";
 	PMPDB db;
 	HashMap<String, String> personsId;
 	HashMap<String, ArrayList<Face>> personFaces;
@@ -51,83 +49,42 @@ public class PicasaFaces {
 	
 	@SuppressWarnings("static-access")
 	public static void main(String[] args) throws Exception {
-		Options options = new Options();
-    	options.addOption("h","help", false, "print the help content");
-    	options.addOption(OptionBuilder.withArgName("srcFolder").hasArg().withDescription("Picasa DB folder. Default is " + EnvironmentVariables.DEFAULT_PICASA_DB_PATH).create(PARAM_PICASA_DB_FOLDER));
-    	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
-    	options.addOption(OptionBuilder.withArgName("replaceRegex").hasArg().withDescription("regex to change original image path if needed").create("replaceRegex"));
-    	options.addOption(OptionBuilder.withArgName("replacement").hasArg().withDescription("replacement for the regex").create("replacement"));
-    	options.addOption(new Option("prefix", "add prefix to generated face images"));
-    	options.addOption(OptionBuilder.withArgName("convert").hasArg().withDescription("path of convert from imagemagick (including convert itself)").create("convert"));
-    	
-    	CommandLineParser parser = new GnuParser();
-    	File folder=null;
-    	String output=null;
-    	String regex=null;
-    	String replacement=null;
-    	boolean prefix =false;
-    	String convert = null;
-        try {
-            // parse the command line arguments
-            CommandLine line = parser.parse( options, args );
-            if(line.hasOption("h")){
-            	showHelp(options);
-                System.exit(1);
-            }
-            
-            folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
+		EnvironmentVariables.StandardArguments a = EnvironmentVariables.parseCommandLine("PicasaFaces", HELP, args,
+				OptionBuilder.withArgName("replaceRegex").hasArg().withDescription("regex to change original image path if needed").create("replaceRegex"),
+    			OptionBuilder.withArgName("replacement").hasArg().withDescription("replacement for the regex").create("replacement"),
+    			new Option("prefix", "add prefix to generated face images"),
+    			OptionBuilder.withArgName("convert").hasArg().withDescription("path of convert from imagemagick (including convert itself)").create("convert"));
+		CommandLine line = a.line;
+		String regex=null;
+		String replacement=null;
+		boolean prefix =false;
+		String convert = null;
 
-        	if(line.hasOption(PARAM_OUTPUT_FOLDER)){
-            	output = EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER));
-                if(!output.endsWith(File.separator)){
-                	output += File.separator;
-                }
-            	if(! new File(output).exists()){
-            		new File(output).mkdir();
-            	}
-            }
-            if(line.hasOption("replaceRegex") && !line.hasOption("replacement")){
-            	throw new Exception("both 'replaceRegex' and 'replacement' must be present");
-            }
-            if(!line.hasOption("replaceRegex") && line.hasOption("replacement")){
-            	throw new Exception("both 'replaceRegex' and 'replacement' must be present");
-            }
-            if(line.hasOption("replaceRegex") && line.hasOption("replacement")){
-            	regex = line.getOptionValue("replaceRegex");
-            	replacement = line.getOptionValue("replacement");
-            }
-            if(line.hasOption("prefix")){
-            	prefix=true;
-            }
-            if(line.hasOption("convert")){
-            	convert=EnvironmentVariables.expandEnvVars(line.getOptionValue("convert"));
-            }
-        }
-        catch( ParseException exp ) {
-            // oops, something went wrong
-        	
-            System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
-            showHelp(options);
-            System.exit(1);
-        }
-        
-        PicasaFaces faces = new PicasaFaces(folder);
+
+		if(line.hasOption("replaceRegex") && !line.hasOption("replacement")){
+			throw new Exception("both 'replaceRegex' and 'replacement' must be present");
+		}
+		if(!line.hasOption("replaceRegex") && line.hasOption("replacement")){
+			throw new Exception("both 'replaceRegex' and 'replacement' must be present");
+		}
+		if(line.hasOption("replaceRegex") && line.hasOption("replacement")){
+			regex = line.getOptionValue("replaceRegex");
+			replacement = line.getOptionValue("replacement");
+		}
+		if(line.hasOption("prefix")){
+			prefix=true;
+		}
+		if(line.hasOption("convert")){
+			convert=EnvironmentVariables.expandEnvVars(line.getOptionValue("convert"));
+		}
+
+        PicasaFaces faces = new PicasaFaces(a.folder);
         faces.populate();
         faces.populatePersons();
         faces.gatherImages();
-        faces.processImages(regex, replacement, output, prefix, convert);
-
+        faces.processImages(regex, replacement, a.output, prefix, convert);
 	}
 
-	private static void showHelp(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp("PicasaFaces will extract the face information from the Picasa Database and save it in a csv file. " +
-				"If the command line contains the argument '-convert' followed by the path to convert, " +
-				"then imagemagick will create all the face thumbshots (in the output folder with a folder for each person). " +
-				"A string replacement of the image paths can be done if the pictures location is different from the database.", 
-				"PicasaFaces" , options , "", true);
-	}
-	
 	public void gatherImages(){
 		long nb=db.indexes.entries;
 		
@@ -176,10 +133,10 @@ public class PicasaFaces {
 		}
 	}
 	
-	public void processImages(String regex, String replacement, String output, boolean prefix, String convert) throws IOException, InterruptedException{
+	public void processImages(String regex, String replacement, File output, boolean prefix, String convert) throws IOException, InterruptedException{
 		StringBuilder csv = new StringBuilder("person;prefix;filename;original image path;transformed image path;image width;image height;face x;face y;face width;face height\n");
 		for(String person:personFaces.keySet()){
-			File folderPerson = new File(output+person);
+			File folderPerson = new File(output, person);
 			if(convert!=null && !folderPerson.exists()){
 				folderPerson.mkdir();
 			}
@@ -202,9 +159,9 @@ public class PicasaFaces {
 				if(prefix){
 					prefixStr = ""+ i +"_";
 				}
-				String filename = output + person + File.separator + prefixStr+file[file.length-1];
-				if(convert!=null && new File(filename).exists()){
-					System.out.println("Warning, the filename already exist: "+person + File.separator + prefixStr+file[file.length-1]);
+				File filename = new File(folderPerson, prefixStr+file[file.length-1]);
+				if(convert!=null && filename.exists()){
+					System.out.println("Warning, the filename already exist: " + filename);
 				}
 				csv.append(person);
 				csv.append(";");
@@ -234,19 +191,19 @@ public class PicasaFaces {
 				csv.append("\n");
 				
 				if(convert!=null){
-					
+					String escapedFilename = filename.toString();
 					if(File.separator.equals("\\")){
 						path = "\""+path+"\"";
-						filename = "\""+filename+"\"";
+						escapedFilename = "\""+filename+"\"";
 					}
-					String []cmd = {convert,path, "-crop", f.w+"x"+f.h+"+"+x+"+"+y, filename};
+					String []cmd = {convert,path, "-crop", f.w+"x"+f.h+"+"+x+"+"+y, escapedFilename};
 					Process p = Runtime.getRuntime().exec(cmd);
 					p.waitFor();
 				}
 				i++;
 			}
 		}
-		FileWriter fw = new FileWriter(output+"faces.csv");
+		FileWriter fw = new FileWriter(new File(output, "faces.csv"));
         BufferedWriter bw = new BufferedWriter(fw);
         bw.write(csv.toString());
         bw.close();

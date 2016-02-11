@@ -7,20 +7,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVPrinter;
 
 public class Indexes {
-	private static final String PARAM_OUTPUT_FOLDER = "output";
-
-	private static final String PARAM_PICASA_DB_FOLDER = "folder";
-
 	//will store the name of the folders or the name of the image file (the index in the list will be the correct index of the image file)
     ArrayList<String> names;  
     
@@ -95,41 +84,10 @@ public class Indexes {
     
     @SuppressWarnings("static-access")
 	public static void main(String []args) throws Exception{
-    	Options options = new Options();
-    	options.addOption("h","help", false, "prints the help content");
-    	options.addOption(OptionBuilder.withArgName("srcFolder").hasArg().withDescription("Picasa DB folder. Default is " + EnvironmentVariables.DEFAULT_PICASA_DB_PATH).create(PARAM_PICASA_DB_FOLDER));
-    	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
-    	
-    	CommandLineParser parser = new GnuParser();
-    	File folder=null;
-    	File output=null;
-        try {
-            // parse the command line arguments
-            CommandLine line = parser.parse( options, args );
-            if(line.hasOption("h")){
-            	HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp( "ReadThumbs" , options );
-                System.exit(1);
-            }
-            
-            folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
-
-            output = new File(EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER)));
-            if (!output.mkdirs() && !output.isDirectory()) {
-                throw new Exception("couldn't create output folder:"+output);
-            }
-        }
-        catch( ParseException exp ) {
-            // oops, something went wrong
-        	
-            System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp( "ReadThumbs" , options );
-            System.exit(1);
-        }
+        EnvironmentVariables.StandardArguments a = EnvironmentVariables.parseCommandLine("Indexes", null, args);
         
-        Indexes indexes = new Indexes(folder);
+        Indexes indexes = new Indexes(a.folder);
         indexes.Populate();
-        indexes.writeCSV(output);
+        indexes.writeCSV(a.output);
     }
 }
