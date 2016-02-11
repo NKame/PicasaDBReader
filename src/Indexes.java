@@ -72,8 +72,8 @@ public class Indexes {
         din.close();
     }
     
-    public void writeCSV(String output) throws IOException{
-        FileWriter fw = new FileWriter(output+"indexes.csv");
+    public void writeCSV(File output) throws IOException{
+        FileWriter fw = new FileWriter(new File(output, "indexes.csv"));
         BufferedWriter bw = new BufferedWriter(fw);
         CSVPrinter csv = new CSVPrinter(bw, PMPDB.CSV_FORMAT.withHeader("Index", "Original Indexes", "type", "Image Path"));
 
@@ -102,7 +102,7 @@ public class Indexes {
     	
     	CommandLineParser parser = new GnuParser();
     	String folder=null;
-    	String output=null;
+    	File output=null;
         try {
             // parse the command line arguments
             CommandLine line = parser.parse( options, args );
@@ -114,14 +114,9 @@ public class Indexes {
             
             folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
 
-            if(line.hasOption(PARAM_OUTPUT_FOLDER)){
-            	output = EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER));
-                if(!output.endsWith(File.separator)){
-                	output += File.separator;
-                }
-            	if(! new File(output).exists()){
-            		throw new Exception("output folder does not exist:"+output);
-            	}
+            output = new File(EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER)));
+            if (!output.mkdirs() && !output.isDirectory()) {
+                throw new Exception("couldn't create output folder:"+output);
             }
         }
         catch( ParseException exp ) {
