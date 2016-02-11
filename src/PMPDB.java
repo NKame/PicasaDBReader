@@ -38,8 +38,8 @@ public class PMPDB {
 	String folder;
 	Indexes indexes;
 
-    private static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.withDelimiter(';');
-	
+    static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.withDelimiter(';');
+
 	public PMPDB(String folder) {
 		this.folder = folder;
 		indexes = new Indexes(folder);

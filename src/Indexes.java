@@ -14,6 +14,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.csv.CSVPrinter;
 
 public class Indexes {
 	private static final String PARAM_OUTPUT_FOLDER = "output";
@@ -72,23 +73,24 @@ public class Indexes {
     }
     
     public void writeCSV(String output) throws IOException{
-    	StringBuilder s = new StringBuilder("Index;Original Indexes;type;Image Path\n");
-        for(int i=0; i<entries; i++){
-            if(indexes.get(i).compareTo(folderIndex)!=0){ // not a folder
-                s.append(i+";"+originalIndexes.get(i)+";0;"+names.get(new Long(indexes.get(i)).intValue()) +names.get(i)+"\n");
-            }else{ // folder
-            	if(names.get(i).equals("")){
-            		s.append(i+";"+originalIndexes.get(i)+";2;" +names.get(i)+"\n");
-            	}else{
-            		s.append(i+";"+originalIndexes.get(i)+";1;" +names.get(i)+"\n");
-            	}
-            }
-        }
-
         FileWriter fw = new FileWriter(output+"indexes.csv");
         BufferedWriter bw = new BufferedWriter(fw);
-        bw.write(s.toString());
-        bw.close();
+        CSVPrinter csv = new CSVPrinter(bw, PMPDB.CSV_FORMAT.withHeader("Index", "Original Indexes", "type", "Image Path"));
+
+        for(int i=0; i<entries; i++){
+            Long originalIndex = originalIndexes.get(i);
+            String name = names.get(i);
+            final int type;
+            if(indexes.get(i).compareTo(folderIndex)!=0){ // not a folder
+                type = 0;
+                String folderName = names.get(indexes.get(i).intValue());
+                name = folderName + name;
+            }else{ // folder
+                type = name.equals("") ? 2 : 1;
+            }
+            csv.printRecord(i, originalIndex, type, name);
+        }
+        csv.close();
     }
     
     @SuppressWarnings("static-access")
