@@ -208,11 +208,9 @@ public class PMPDB {
 
             folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
 
-            if(line.hasOption(PARAM_OUTPUT_FOLDER)){
-                output = new File(EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER)));
-                if (!output.mkdirs() && !output.isDirectory()) {
-                    throw new Exception("could not create output folder: " + output);
-            	}
+            output = new File(EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER)));
+            if (!output.mkdirs() && !output.isDirectory()) {
+                throw new Exception("could not create output folder: " + output);
             }
         }
         catch( ParseException exp ) {
