@@ -17,7 +17,7 @@ public class EnvironmentVariables {
 	    return text;
 	}
 
-	public static String getPicasaDBFolder(CommandLine line, String parameterNameForPicasaDBFolder) throws Exception {
+	public static File getPicasaDBFolder(CommandLine line, String parameterNameForPicasaDBFolder) throws Exception {
 		String folder;
 		// under M$-Windows7 picasa db is usually at %LOCALAPPDATA%/Google/Picasa2/db3
 		// that will be expaned to C:/Users/{UserName}/AppData/Local/Google/Picasa2/db3
@@ -26,12 +26,11 @@ public class EnvironmentVariables {
 		} else {
 			folder = EnvironmentVariables.DEFAULT_PICASA_DB_PATH;
 		}
-		if(!folder.endsWith(File.separator)){
-			folder += File.separator;
-		}
-		if(! new File(folder).exists()){
+
+		File file = new File(folder);
+		if (!file.isDirectory()) {
 			throw new Exception("Source folder does not exist:"+folder);
 		}
-		return folder;
+		return file;
 	}
 }

@@ -27,11 +27,11 @@ public class Indexes {
     //will store 0xFFFFFFFF for folder, the index of the folder for image files
     ArrayList<Long> indexes;
     ArrayList<Long> originalIndexes ;
-    String folder;
+    private final File folder;
     Long folderIndex = new Long(4294967295L);
     long entries;
     
-    public Indexes(String folder) {
+    public Indexes(File folder) {
     	names = new ArrayList<String>();  
         indexes = new ArrayList<Long>();
         originalIndexes = new ArrayList<Long>();
@@ -39,7 +39,7 @@ public class Indexes {
 	}
     
     public void Populate() throws Exception{
-    	DataInputStream din = new DataInputStream(new BufferedInputStream(new FileInputStream(folder+"thumbindex.db")));
+    	DataInputStream din = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(folder, "thumbindex.db"))));
         @SuppressWarnings("unused")
 		long magic = ReadFunctions.readUnsignedInt(din); //file start with a magic sequence
         entries = ReadFunctions.readUnsignedInt(din); // then number of entries
@@ -101,7 +101,7 @@ public class Indexes {
     	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
     	
     	CommandLineParser parser = new GnuParser();
-    	String folder=null;
+    	File folder=null;
     	File output=null;
         try {
             // parse the command line arguments

@@ -35,12 +35,12 @@ public class PMPDB {
 	HashMap<String, ArrayList<String>> catdata;
 	HashMap<String, ArrayList<String>> albumdata;
 	HashMap<String, ArrayList<String>> imagedata;
-	String folder;
+	File folder;
 	Indexes indexes;
 
     static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.withDelimiter(';');
 
-	public PMPDB(String folder) {
+	public PMPDB(File folder) {
 		this.folder = folder;
 		indexes = new Indexes(folder);
 	}
@@ -75,7 +75,7 @@ public class PMPDB {
             }
         };
         
-        File[] files = new File(folder).listFiles(filter);
+        File[] files = folder.listFiles(filter);
         HashMap<String, ArrayList<String>> data = new HashMap<String, ArrayList<String>>();
         
         for(int i=0; i<files.length; i++){
@@ -83,14 +83,14 @@ public class PMPDB {
 		    String fieldname	= filename.replace(table+"_", "").replace(".pmp", "");
 	            
 		    //System.out.print(fieldname+" ");
-            data.put(fieldname, readColumn(folder+filename)); //saving column fieldname
+            data.put(fieldname, readColumn(new File(folder, filename))); //saving column fieldname
         }
         
         
         return data;
     }
 	
-	private static ArrayList<String> readColumn(String file) throws Exception{
+	private static ArrayList<String> readColumn(File file) throws Exception{
 		ArrayList<String> l = new ArrayList<String>();
         DataInputStream din = new DataInputStream
             (new BufferedInputStream
@@ -193,7 +193,7 @@ public class PMPDB {
     	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
 
     	CommandLineParser parser = new GnuParser();
-    	String folder=null;
+    	File folder = null;
         File output = null;
         try {
             // parse the command line arguments

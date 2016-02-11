@@ -24,7 +24,7 @@ public class PicasaFaces {
 	HashMap<String, ArrayList<Face>> personFaces;
 	HashMap<Long, Image> images;
 
-	public PicasaFaces(String folder) {
+	public PicasaFaces(File folder) {
 		db = new PMPDB(folder);
 		personsId = new HashMap<String, String>();
 		personFaces = new HashMap<String, ArrayList<Face>>();
@@ -61,7 +61,7 @@ public class PicasaFaces {
     	options.addOption(OptionBuilder.withArgName("convert").hasArg().withDescription("path of convert from imagemagick (including convert itself)").create("convert"));
     	
     	CommandLineParser parser = new GnuParser();
-    	String folder=null;
+    	File folder=null;
     	String output=null;
     	String regex=null;
     	String replacement=null;
