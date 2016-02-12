@@ -167,6 +167,8 @@ public class PMPDB {
                 // for column that have less elements that the max, leave the trailing cells empty
                 if(data.get(key).size()>i){
                     csv.print(data.get(key).get(i));
+                } else {
+                    csv.print("");
                 }
             }
             csv.println();
