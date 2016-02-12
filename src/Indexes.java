@@ -10,20 +10,28 @@ import java.util.ArrayList;
 import org.apache.commons.csv.CSVPrinter;
 
 public class Indexes {
+    public enum Type {
+        FILE,
+        FOLDER,
+        REFERENCE;
+    }
+
 	//will store the name of the folders or the name of the image file (the index in the list will be the correct index of the image file)
     ArrayList<String> names;  
     
     //will store 0xFFFFFFFF for folder, the index of the folder for image files
     ArrayList<Long> indexes;
     ArrayList<Long> originalIndexes ;
+    ArrayList<Type> types;
     private final File folder;
-    Long folderIndex = new Long(4294967295L);
+    final Long folderIndex = 0xFFFFFFFFL;
     long entries;
     
     public Indexes(File folder) {
     	names = new ArrayList<String>();  
         indexes = new ArrayList<Long>();
         originalIndexes = new ArrayList<Long>();
+        types = new ArrayList<>();
         this.folder = folder;
 	}
     
@@ -37,8 +45,7 @@ public class Indexes {
         
         String path;
         long index;
-        Long folderIndex = new Long(4294967295L); //0xFFFFFFFF
-        
+
        for(int i=0;i<entries;i++){
            
             path = ReadFunctions.getString(din);  // null terminated string
@@ -51,12 +58,14 @@ public class Indexes {
             originalIndexes.add(index);
             
             
-            if(path.equals("")){   //empty file name (deleted), change index to 0xFFFFFFFF
+            if(path.equals("") && index != folderIndex){   //empty file name (deleted), change index to 0xFFFFFFFF
                 indexes.set(i, folderIndex);
-                continue;
+                types.add(Type.REFERENCE);
+            } else if (index == folderIndex) {
+                types.add(Type.FOLDER);
+            } else {
+                types.add(Type.FILE);
             }
-
-        
        }
         din.close();
     }
