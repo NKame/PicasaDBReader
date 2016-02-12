@@ -8,6 +8,8 @@ import java.util.HashMap;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FilenameUtils;
 
 
@@ -132,13 +134,20 @@ public class PicasaFaces {
             }
 		}
 	}
-	
-	public void processImages(String regex, String replacement, File output, boolean prefix, String convert) throws IOException, InterruptedException{
-		StringBuilder csv = new StringBuilder("person;prefix;filename;original image path;transformed image path;image width;image height;face x;face y;face width;face height\n");
+
+	private static final CSVFormat CSV_FORMAT = PMPDB.CSV_FORMAT.withHeader(
+			"person", "prefix", "filename", "original image path", "transformed image path",
+			"image width", "image height", "face x", "face y", "face width", "face height");
+
+	public void processImages(String regex, String replacement, File output, boolean prefix, String convert) throws IOException, InterruptedException {
+		FileWriter fw = new FileWriter(new File(output, "faces.csv"));
+		BufferedWriter bw = new BufferedWriter(fw);
+		CSVPrinter csv = new CSVPrinter(bw, CSV_FORMAT);
+
 		for(String person:personFaces.keySet()){
 			File folderPerson = new File(output, person);
-			if(convert!=null && !folderPerson.exists()){
-				folderPerson.mkdir();
+			if(convert!=null && !folderPerson.mkdirs() && !folderPerson.isDirectory()) {
+				throw new IOException("Could not create directory " + folderPerson);
 			}
 			
 			int i=0;
@@ -148,8 +157,6 @@ public class PicasaFaces {
 				if(regex!=null && replacement!=null){
 					path = path.replaceAll(regex, replacement);
 				}
-				int x=f.x;
-				int y=f.y;
 				String separator = File.separator;
 				if(separator.equals("\\")){
 					separator="\\\\";
@@ -159,53 +166,27 @@ public class PicasaFaces {
 				if(prefix){
 					prefixStr = ""+ i +"_";
 				}
-				File filename = new File(folderPerson, prefixStr+file[file.length-1]);
+				String convertedFileBasename = file[file.length - 1];
+				File filename = new File(folderPerson, prefixStr+ convertedFileBasename);
 				if(convert!=null && filename.exists()){
 					System.out.println("Warning, the filename already exist: " + filename);
 				}
-				csv.append(person);
-				csv.append(";");
-				if(prefix){
-					csv.append(i);
-				}else{
-					csv.append("none");
-				}
-				csv.append(";");
-				csv.append(file[file.length-1]);
-				csv.append(";");
-				csv.append(f.img.path);
-				csv.append(";");
-				csv.append(path);
-				csv.append(";");
-				csv.append(f.img.w);
-				csv.append(";");
-				csv.append(f.img.h);
-				csv.append(";");
-				csv.append(f.x);
-				csv.append(";");
-				csv.append(f.y);
-				csv.append(";");
-				csv.append(f.w);
-				csv.append(";");
-				csv.append(f.h);
-				csv.append("\n");
-				
+				csv.printRecord(person, prefixStr, convertedFileBasename, f.img.path, path,
+					f.img.w, f.img.h, f.x, f.y, f.w, f.h);
+
 				if(convert!=null){
 					String escapedFilename = filename.toString();
 					if(File.separator.equals("\\")){
 						path = "\""+path+"\"";
 						escapedFilename = "\""+filename+"\"";
 					}
-					String []cmd = {convert,path, "-crop", f.w+"x"+f.h+"+"+x+"+"+y, escapedFilename};
+					String []cmd = {convert,path, "-crop", f.w+"x"+f.h+"+"+ f.x +"+"+ f.y, escapedFilename};
 					Process p = Runtime.getRuntime().exec(cmd);
 					p.waitFor();
 				}
 				i++;
 			}
 		}
-		FileWriter fw = new FileWriter(new File(output, "faces.csv"));
-        BufferedWriter bw = new BufferedWriter(fw);
-        bw.write(csv.toString());
-        bw.close();
+		csv.close();
 	}
 }
