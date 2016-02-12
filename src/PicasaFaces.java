@@ -92,9 +92,14 @@ public class PicasaFaces {
 		
 		
 		for(int i=0; i<nb; i++){
-			
-			if(db.indexes.indexes.get(i).compareTo(db.indexes.folderIndex)!=0){ // not a folder
-				String path = db.indexes.names.get(new Long(db.indexes.indexes.get(i)).intValue()) + db.indexes.names.get(i);
+			Long index = db.indexes.indexes.get(i);
+			Long originalIndex = db.indexes.originalIndexes.get(i);
+			String name = db.indexes.names.get(i);
+
+			if(!index.equals(db.indexes.folderIndex) &&
+					!originalIndex.equals(db.indexes.folderIndex)){ // not a folder and not a reference
+				String path = db.indexes.names.get(originalIndex.intValue()) + name;
+
 				int w = Integer.parseInt(db.imagedata.get("width").get(i));
 				int h = Integer.parseInt(db.imagedata.get("height").get(i));
 				Image img = new Image(path, i, w, h);
@@ -112,26 +117,23 @@ public class PicasaFaces {
 	            	}
 	            }
 				images.put((long)i, img);
-			}else{ // folder
-            	if(db.indexes.names.get(i).equals("") && db.indexes.originalIndexes.get(i).compareTo(db.indexes.folderIndex)!=0){ // reference
-            		if(i>=db.imagedata.get("personalbumid").size()){
-            			break;
-            		}
-            		String personName = personsId.get(db.imagedata.get("personalbumid").get(i));
-            		Long originalIndex = db.indexes.originalIndexes.get(i);
-            		if(!db.imagedata.get("facerect").get(i).equals("0000000000000001")){
-            			images.get(originalIndex).hasChild=true;
-    	            	Face f = images.get(originalIndex).addFace(db.imagedata.get("facerect").get(i), personName);
-    	            	if(!db.imagedata.get("personalbumid").get(i).equals("0")){
-    	            		if(!personFaces.containsKey(personName)){
-    	            			personFaces.put(personName, new ArrayList<Face>());
-    	            		}
-    	            		
-    	            		personFaces.get(personName).add(f);
+			} else if (name.equals("") && !originalIndex.equals(db.indexes.folderIndex)){ // reference
+            	if(i>=db.imagedata.get("personalbumid").size()){
+            		break;
+            	}
+            	String personName = personsId.get(db.imagedata.get("personalbumid").get(i));
+            	if(!db.imagedata.get("facerect").get(i).equals("0000000000000001")){
+            		images.get(originalIndex).hasChild=true;
+    	            Face f = images.get(originalIndex).addFace(db.imagedata.get("facerect").get(i), personName);
+    	            if(!db.imagedata.get("personalbumid").get(i).equals("0")){
+    	            	if(!personFaces.containsKey(personName)){
+    	            		personFaces.put(personName, new ArrayList<Face>());
     	            	}
+
+    	            	personFaces.get(personName).add(f);
     	            }
-            	}// else folder
-            }
+                }
+			}// else folder
 		}
 	}
 
