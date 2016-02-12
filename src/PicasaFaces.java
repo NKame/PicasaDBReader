@@ -95,6 +95,10 @@ public class PicasaFaces {
 			Long index = db.indexes.indexes.get(i);
 			Long originalIndex = db.indexes.originalIndexes.get(i);
 			String name = db.indexes.names.get(i);
+			String facerect = db.imagedata.get("facerect").get(i);
+
+			String personalbumid = db.imagedata.get("personalbumid").get(i);
+			String personName = personsId.get(personalbumid);
 
 			if(!index.equals(db.indexes.folderIndex) &&
 					!originalIndex.equals(db.indexes.folderIndex)){ // not a folder and not a reference
@@ -103,12 +107,11 @@ public class PicasaFaces {
 				int w = Integer.parseInt(db.imagedata.get("width").get(i));
 				int h = Integer.parseInt(db.imagedata.get("height").get(i));
 				Image img = new Image(path, i, w, h);
-				String personName = personsId.get(db.imagedata.get("personalbumid").get(i));
-	            if(!db.imagedata.get("facerect").get(i).equals("0000000000000001")){
+	            if(!facerect.equals("0000000000000001")){
 	            	img.hasFaceData=true;
 	            	
-	            	Face f = img.addFace(db.imagedata.get("facerect").get(i), personName );
-	            	if(!db.imagedata.get("personalbumid").get(i).equals("0")){
+	            	Face f = img.addFace(facerect, personName );
+	            	if(!personalbumid.equals("0")){
 	            		if(!personFaces.containsKey(personName)){
 	            			personFaces.put(personName, new ArrayList<Face>());
 	            		}
@@ -118,14 +121,10 @@ public class PicasaFaces {
 	            }
 				images.put((long)i, img);
 			} else if (name.equals("") && !originalIndex.equals(db.indexes.folderIndex)){ // reference
-            	if(i>=db.imagedata.get("personalbumid").size()){
-            		break;
-            	}
-            	String personName = personsId.get(db.imagedata.get("personalbumid").get(i));
-            	if(!db.imagedata.get("facerect").get(i).equals("0000000000000001")){
+            	if(!facerect.equals("0000000000000001")){
             		images.get(originalIndex).hasChild=true;
-    	            Face f = images.get(originalIndex).addFace(db.imagedata.get("facerect").get(i), personName);
-    	            if(!db.imagedata.get("personalbumid").get(i).equals("0")){
+    	            Face f = images.get(originalIndex).addFace(facerect, personName);
+    	            if(!personalbumid.equals("0")){
     	            	if(!personFaces.containsKey(personName)){
     	            		personFaces.put(personName, new ArrayList<Face>());
     	            	}
