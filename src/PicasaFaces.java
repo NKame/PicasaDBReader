@@ -92,9 +92,7 @@ public class PicasaFaces {
 		
 		
 		for(int i=0; i<nb; i++){
-			Long index = db.indexes.indexes.get(i);
 			Long originalIndex = db.indexes.originalIndexes.get(i);
-			String name = db.indexes.names.get(i);
 			Indexes.Type type = db.indexes.types.get(i);
 
 			String facerect = db.imagedata.get("facerect").get(i);
@@ -104,7 +102,7 @@ public class PicasaFaces {
 
 
 			if (type == Indexes.Type.FILE) {
-				String path = db.indexes.names.get(originalIndex.intValue()) + name;
+				String path = db.indexes.fullnames.get(i);
 
 				int w = Integer.parseInt(db.imagedata.get("width").get(i));
 				int h = Integer.parseInt(db.imagedata.get("height").get(i));

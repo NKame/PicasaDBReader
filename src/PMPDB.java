@@ -49,8 +49,7 @@ public class PMPDB {
 		}
 		imagedata.put("index",is);
 		imagedata.put("original index", ois);
-		imagedata.put("name", indexes.names);
-		
+		imagedata.put("fullname", indexes.fullnames);
 	}
 	
 	
@@ -63,7 +62,7 @@ public class PMPDB {
             	return filename.startsWith(table+"_") && filename.endsWith(".pmp");
             }
         };
-        
+
         File[] files = folder.listFiles(filter);
         HashMap<String, ArrayList<String>> data = new HashMap<String, ArrayList<String>>();
         

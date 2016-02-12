@@ -13,22 +13,31 @@ public class Indexes {
     public enum Type {
         FILE,
         FOLDER,
+        /**
+         * Seems to be used to store >1 face for a single image.
+         */
         REFERENCE;
     }
 
-	//will store the name of the folders or the name of the image file (the index in the list will be the correct index of the image file)
-    ArrayList<String> names;  
-    
-    //will store 0xFFFFFFFF for folder, the index of the folder for image files
+    /** Basename of files; full path of folders; empty string for references. */
+    ArrayList<String> names;
+
+    /** Full path to file or folder. */
+    ArrayList<String> fullnames;
+
+    /** Index within the database, or {@link #folderIndex} for references (TODO: why?) */
     ArrayList<Long> indexes;
-    ArrayList<Long> originalIndexes ;
+    /** Index of parent, or {@link #folderIndex} for folders */
+    ArrayList<Long> originalIndexes;
+    /** Type of this database entry */
     ArrayList<Type> types;
     private final File folder;
     final Long folderIndex = 0xFFFFFFFFL;
     long entries;
     
     public Indexes(File folder) {
-    	names = new ArrayList<String>();  
+        names = new ArrayList<String>();
+        fullnames = new ArrayList<String>();
         indexes = new ArrayList<Long>();
         originalIndexes = new ArrayList<Long>();
         types = new ArrayList<>();
@@ -66,8 +75,28 @@ public class Indexes {
             } else {
                 types.add(Type.FILE);
             }
+
        }
         din.close();
+
+        for (int i = 0; i < entries; i++) {
+            fullnames.add(getFullPath(i));
+        }
+    }
+
+    private String getFullPath(int i) {
+        String name = names.get(i);
+
+        switch (types.get(i)) {
+            case FOLDER:
+                return name;
+            case FILE:
+            case REFERENCE:
+                return getFullPath(originalIndexes.get(i).intValue()) + name;
+            default:
+                // Unpossible
+                return null;
+        }
     }
     
     public void writeCSV(File output) throws IOException{
@@ -77,16 +106,10 @@ public class Indexes {
 
         for(int i=0; i<entries; i++){
             Long originalIndex = originalIndexes.get(i);
-            String name = names.get(i);
-            final int type;
-            if(indexes.get(i).compareTo(folderIndex)!=0){ // not a folder
-                type = 0;
-                String folderName = names.get(indexes.get(i).intValue());
-                name = folderName + name;
-            }else{ // folder
-                type = name.equals("") ? 2 : 1;
-            }
-            csv.printRecord(i, originalIndex, type, name);
+            String name = fullnames.get(i);
+            Type type = types.get(i);
+
+            csv.printRecord(i, originalIndex, type.name(), name);
         }
         csv.close();
     }
