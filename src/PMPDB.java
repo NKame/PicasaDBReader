@@ -6,10 +6,9 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
+import org.apache.commons.cli.Option;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
@@ -135,23 +134,30 @@ public class PMPDB {
         return l;
     }
 	
-	public void writeCSVs(File output) throws Exception{
+	public void writeCSVs(File output, List<String> imagefields) throws Exception{
 		writeCSV("catdata", catdata, output);
-		writeCSV("imagedata", imagedata, output);
+		writeCSV("imagedata", imagedata, output, imagefields);
 		writeCSV("albumdata", albumdata, output);
 	}
-	
-    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output) throws Exception{
+
+    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output) throws Exception {
+        writeCSV(table, data, output, new ArrayList<String>(data.keySet()));
+    }
+
+    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output, List<String> keys) throws Exception{
     	// not all files have the same number of elements, get the maximum size for a table
         int max = 0;
 
-        List<String> keys = new ArrayList<String>(data.keySet());
+        Iterator<String> it = keys.iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            ArrayList<String> column = data.get(key);
 
-        for (String key: keys){
-            int size = data.get(key).size();
-            //System.out.println(key+":"+size);
-            if(size>max)
-                max=size;
+            if (column != null) {
+                max = Math.max(max, column.size());
+            } else {
+                it.remove();
+            }
         }
 
         FileWriter fw = new FileWriter(new File(output, table+".csv"));
@@ -177,11 +183,22 @@ public class PMPDB {
 	
 	@SuppressWarnings("static-access")
 	public static void main(String[] args) throws Exception {
-        EnvironmentVariables.StandardArguments a = EnvironmentVariables.parseCommandLine(APPTITLE, HELP, args);
+        EnvironmentVariables.StandardArguments a = EnvironmentVariables.parseCommandLine(APPTITLE, HELP, args,
+                Option.builder("imagefields")
+                        .hasArg()
+                        .argName("field1[,field2[,...]]")
+                        .desc("only include the given fields in imagedata.csv")
+                        .build());
+
+        String[] imagefields = {};
+        String p = a.line.getOptionValue("imagefields");
+        if (p != null && !p.isEmpty()) {
+            imagefields = p.split(",");
+        }
 
         PMPDB db = new PMPDB(a.folder);
         db.populate();
-        db.writeCSVs(a.output);
+        db.writeCSVs(a.output, Arrays.asList(imagefields));
 	}
 
 }
