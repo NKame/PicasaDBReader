@@ -2,13 +2,13 @@ import java.util.ArrayList;
 
 
 public class Image {
-	String path;
+	final String path;
 	boolean hasFaceData = false;
 	boolean hasChild = false;
-	long index;
-	int h;
-	int w;
-	ArrayList<Face> faces;
+	final long index;
+	final int h;
+	final int w;
+	final ArrayList<Face> faces;
 	
 	public Image(String path, long index, int w, int h) {
 		this.path=path;

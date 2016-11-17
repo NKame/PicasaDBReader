@@ -1,11 +1,11 @@
 
 public class Face {
-	int x;
-	int y;
-	int w;
-	int h;
-	Image img;
-	String name;
+	final int x;
+	final int y;
+	final int w;
+	final int h;
+	final Image img;
+	final String name;
 	
 	public Face(int x, int y, int w, int h, String name, Image i) {
 		this.x=x;
