@@ -163,7 +163,7 @@ public class PMPDB {
         // column names
         for (String key:data.keySet()){
                 s.append(key);
-                s.append(";");
+                s.append("*****");
             }
         s.append("\n");
         
@@ -177,7 +177,7 @@ public class PMPDB {
                 }else{
                     s.append("%empty%");
                 }
-                s.append(";");
+                s.append("*****");
             }
             s.append("\n");
         }
