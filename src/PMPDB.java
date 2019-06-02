@@ -6,23 +6,14 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.Option;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 
 public class PMPDB {
-	private static final String PARAM_OUTPUT_FOLDER = "output";
-
-	private static final String PARAM_PICASA_DB_FOLDER = "folder";
-
 	private static final String APPTITLE = "PMPDB";
 
 	private static final String HELP = "read all the PMP files containing the Picasa Database and the file " +
@@ -32,10 +23,12 @@ public class PMPDB {
 	HashMap<String, ArrayList<String>> catdata;
 	HashMap<String, ArrayList<String>> albumdata;
 	HashMap<String, ArrayList<String>> imagedata;
-	String folder;
+	File folder;
 	Indexes indexes;
-	
-	public PMPDB(String folder) {
+
+    static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.withDelimiter(';');
+
+	public PMPDB(File folder) {
 		this.folder = folder;
 		indexes = new Indexes(folder);
 	}
@@ -55,8 +48,7 @@ public class PMPDB {
 		}
 		imagedata.put("index",is);
 		imagedata.put("original index", ois);
-		imagedata.put("name", indexes.names);
-		
+		imagedata.put("fullname", indexes.fullnames);
 	}
 	
 	
@@ -69,8 +61,8 @@ public class PMPDB {
             	return filename.startsWith(table+"_") && filename.endsWith(".pmp");
             }
         };
-        
-        File[] files = new File(folder).listFiles(filter);
+
+        File[] files = folder.listFiles(filter);
         HashMap<String, ArrayList<String>> data = new HashMap<String, ArrayList<String>>();
         
         for(int i=0; i<files.length; i++){
@@ -78,14 +70,14 @@ public class PMPDB {
 		    String fieldname	= filename.replace(table+"_", "").replace(".pmp", "");
 	            
 		    //System.out.print(fieldname+" ");
-            data.put(fieldname, readColumn(folder+filename)); //saving column fieldname
+            data.put(fieldname, readColumn(new File(folder, filename))); //saving column fieldname
         }
         
         
         return data;
     }
 	
-	private static ArrayList<String> readColumn(String file) throws Exception{
+	private static ArrayList<String> readColumn(File file) throws Exception{
 		ArrayList<String> l = new ArrayList<String>();
         DataInputStream din = new DataInputStream
             (new BufferedInputStream
@@ -142,98 +134,71 @@ public class PMPDB {
         return l;
     }
 	
-	public void writeCSVs(String output) throws Exception{
+	public void writeCSVs(File output, List<String> imagefields) throws Exception{
 		writeCSV("catdata", catdata, output);
-		writeCSV("imagedata", imagedata, output);
+		writeCSV("imagedata", imagedata, output, imagefields);
 		writeCSV("albumdata", albumdata, output);
 	}
-	
-    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, String output) throws Exception{
+
+    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output) throws Exception {
+        writeCSV(table, data, output, new ArrayList<String>(data.keySet()));
+    }
+
+    private static void writeCSV(String table, HashMap<String, ArrayList<String>> data, File output, List<String> keys) throws Exception{
     	// not all files have the same number of elements, get the maximum size for a table
         int max = 0;
-        for (String key:data.keySet()){
-            int size = data.get(key).size();
-            //System.out.println(key+":"+size);
-            if(size>max)
-                max=size;
-        }
-        
-        StringBuilder s = new StringBuilder();
-        
-        // column names
-        for (String key:data.keySet()){
-                s.append(key);
-                s.append(";");
+
+        Iterator<String> it = keys.iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            ArrayList<String> column = data.get(key);
+
+            if (column != null) {
+                max = Math.max(max, column.size());
+            } else {
+                it.remove();
             }
-        s.append("\n");
-        
-        
-        for(int i=0; i<max ; i++){
-            for (String key:data.keySet()){
-                
-                // for column that have less elements that the max, fill the end with %empty%
-                if(data.get(key).size()>i){
-                    s.append(data.get(key).get(i));
-                }else{
-                    s.append("%empty%");
-                }
-                s.append(";");
-            }
-            s.append("\n");
         }
-    FileWriter fw = new FileWriter(output+table+".csv");
+
+        FileWriter fw = new FileWriter(new File(output, table+".csv"));
         BufferedWriter bw = new BufferedWriter(fw);
-        bw.write(s.toString());
-        bw.close();
+        CSVPrinter csv = new CSVPrinter(bw, CSV_FORMAT);
+
+        // column names
+        csv.printRecord(keys);
+
+        for(int i=0; i<max ; i++){
+            for (String key: keys){
+                // for column that have less elements that the max, leave the trailing cells empty
+                if(data.get(key).size()>i){
+                    csv.print(data.get(key).get(i));
+                } else {
+                    csv.print("");
+                }
+            }
+            csv.println();
+        }
+        csv.close();
     }
 	
 	@SuppressWarnings("static-access")
 	public static void main(String[] args) throws Exception {
-		Options options = new Options();
-    	options.addOption("h","help", false, "prints the help content");
-    	options.addOption(OptionBuilder.withArgName("srcFolder").hasArg().withDescription("Picasa DB folder. Default is " + EnvironmentVariables.DEFAULT_PICASA_DB_PATH).create(PARAM_PICASA_DB_FOLDER));
-    	options.addOption(OptionBuilder.withArgName("outputFolder").hasArg().isRequired().withDescription("output folder").create(PARAM_OUTPUT_FOLDER));
-    	
-    	CommandLineParser parser = new GnuParser();
-    	String folder=null;
-    	String output=null;
-        try {
-            // parse the command line arguments
-            CommandLine line = parser.parse( options, args );
-            if(line.hasOption("h")){
-            	showHelp(options);
-                System.exit(1);
-            }
-            
-            folder = EnvironmentVariables.getPicasaDBFolder(line, PARAM_PICASA_DB_FOLDER);
+        EnvironmentVariables.StandardArguments a = EnvironmentVariables.parseCommandLine(APPTITLE, HELP, args,
+                Option.builder("imagefields")
+                        .hasArg()
+                        .argName("field1[,field2[,...]]")
+                        .desc("only include the given fields in imagedata.csv")
+                        .build());
 
-            if(line.hasOption(PARAM_OUTPUT_FOLDER)){
-            	output = EnvironmentVariables.expandEnvVars(line.getOptionValue(PARAM_OUTPUT_FOLDER));
-                if(!output.endsWith(File.separator)){
-                	output += File.separator;
-                }
-            	if(! new File(output).exists()){
-            		throw new Exception("output folder does not exist:"+output);
-            	}
-            }
+        String[] imagefields = {};
+        String p = a.line.getOptionValue("imagefields");
+        if (p != null && !p.isEmpty()) {
+            imagefields = p.split(",");
         }
-        catch( ParseException exp ) {
-            // oops, something went wrong
-        	
-            System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
-            showHelp(options);
-            System.exit(1);
-        }
-        
-        PMPDB db = new PMPDB(folder);
+
+        PMPDB db = new PMPDB(a.folder);
         db.populate();
-        db.writeCSVs(output);
+        db.writeCSVs(a.output, Arrays.asList(imagefields));
 	}
 
-	private static void showHelp(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(APPTITLE, 
-				HELP, 
-				options, "\n", true);
-	}
 }
