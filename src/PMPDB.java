@@ -198,7 +198,17 @@ public class PMPDB {
 
         PMPDB db = new PMPDB(a.folder);
         db.populate();
+        dumpInfo("Album data", db.albumdata);
+        dumpInfo("Cat data", db.catdata);
+        dumpInfo("Image data", db.imagedata);
         db.writeCSVs(a.output, Arrays.asList(imagefields));
 	}
 
+	private static void dumpInfo(String title, HashMap<String, ArrayList<String>> data) {
+		System.out.println("====================");
+		System.out.println(title);
+		for(Map.Entry<String, ArrayList<String>> e : data.entrySet()) {
+			System.out.println("\t" + e.getKey() + ": " + e.getValue().size());
+		}		
+	}
 }

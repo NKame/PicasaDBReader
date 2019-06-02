@@ -88,24 +88,29 @@ public class PicasaFaces {
 	}
 
 	public void gatherImages(){
-		long nb=db.indexes.entries;
+		final ArrayList<String> facerects = db.imagedata.get("facerect");
+		final ArrayList<String> personalbumids = db.imagedata.get("personalbumid");
+		final ArrayList<String> widths = db.imagedata.get("width");
+		final ArrayList<String> heights = db.imagedata.get("height");
+
+		long nb=Math.min(db.indexes.entries, personalbumids.size());
 		
 		
 		for(int i=0; i<nb; i++){
 			Long originalIndex = db.indexes.originalIndexes.get(i);
 			Indexes.Type type = db.indexes.types.get(i);
 
-			String facerect = db.imagedata.get("facerect").get(i);
+			String facerect = facerects.get(i);
 
-			String personalbumid = db.imagedata.get("personalbumid").get(i);
+			String personalbumid = personalbumids.get(i);
 			String personName = personsId.get(personalbumid);
 
 
 			if (type == Indexes.Type.FILE) {
 				String path = db.indexes.fullnames.get(i);
 
-				int w = Integer.parseInt(db.imagedata.get("width").get(i));
-				int h = Integer.parseInt(db.imagedata.get("height").get(i));
+				int w = Integer.parseInt(widths.get(i));
+				int h = Integer.parseInt(heights.get(i));
 				Image img = new Image(path, i, w, h);
 	            if(!facerect.equals("0000000000000001")){
 	            	img.hasFaceData=true;
